@@ -1,11 +1,21 @@
-var storage = storages.create("dingding");
-storage.put("inTime", 123);
-storage.put("offTime", 123);
+const tbName="dingding"
 
-
-if(storage.contains("inTime")){
-    console.log(storage.get("inTime"))
+function saveToDb(key,val,tb){
+  console.log(111111)
+  if(!tb){
+    tb=tbName;
+  }
+  var storage = storages.create(tb);
+  storage.put(key,val);
 }
+function getFromDb(key,val,tb){
+  if(!tb){
+    tb=tbName;
+  }
+  var storage = storages.create(tb);
+  storage.get(key);
+}
+
 Date.prototype.Format = function(fmt)   
 { //author: meizz   
   var o = {   
@@ -54,3 +64,8 @@ var current = new Date();
 console.log(stringToDate(current.Format("yyyy-MM-dd")+" 09:00:00").Format("yyyy-MM-dd HH:mm:ss"))
 
 console.log(current.getTime())
+
+
+module.exports = {
+  getFromDb:getFromDb
+ }
