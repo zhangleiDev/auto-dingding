@@ -1,4 +1,7 @@
 "ui";
+
+import { Utilities } from "winjs";
+
 function setTime(){
     ui.layout(
         <scroll>
@@ -17,29 +20,37 @@ function setTime(){
     ui.offTime.setIs24HourView(true);
 
     if(tools.getFromDb("intime")){
-        var intime=tools.getFromDb("intime");
-        console.log(intime.split(":")[0])
-        console.log(intime.split(":")[1])
-        ui.inTime.setHour(intime.split(":")[0])
-        ui.inTime.setMinute(intime.split(":")[1])
+        let intime=tools.getFromDb("intime")+0;
+        
+        if(!isNaN(intime)){
+            
+            ui.inTime.setHour(parseInt(intime/3600))
+            ui.inTime.setMinute(parseInt(intime%3600/60))
+        }
+       
+        
     }
     if(tools.getFromDb("offtime")){
         // ui.offTime.setHour(tools.getFromDb("offtime").split(":")[0])
-        var offtime=tools.getFromDb("offtime");
-        console.log(offtime.split(":")[0])
-        console.log(offtime.split(":")[1])
-        ui.offTime.setHour(offtime.split(":")[0])
-        ui.offTime.setMinute(offtime.split(":")[1])
+        let offtime=tools.getFromDb("offtime")+0;
+        if(!isNaN(offtime)){
+            ui.offTime.setHour(parseInt(offtime/3600))
+            ui.offTime.setMinute(parseInt(offtime%3600/60))
+        }
+        
     }  
     
     ui.save.on("click", ()=>{
-        var _in = ui.inTime.getHour()+":"+ui.inTime.getMinute();
-        var off = ui.offTime.getHour()+":"+ui.offTime.getMinute();
-        console.log("上班时间:"+_in);
-        console.log("下班时间:"+off);
+        
+        var _in = ui.inTime.getHour()*3600+ui.inTime.getMinute()*60;
+        var off = ui.offTime.getHour()*3600+ui.offTime.getMinute()*60;
+        tools.log("上班时间:"+_in);
+        tools.log("下班时间:"+off);
+        
         tools.saveToDb("intime",_in)
         tools.saveToDb("offtime",off)
-       
+        toast("时间设置成功");
+        begin();
     });
     ui.back.on("click",()=>{
 
@@ -52,29 +63,106 @@ function begin(){
         <scroll>
             <vertical padding="16">
         
-                <text text="打卡倒计时：" textColor="black" textSize="16sp" marginTop="16"/>
-                <text text="5分10秒" textColor="black" textSize="16sp" marginTop="16"/>
-                <text  bg="#ff0000" text="wfwefwef" gravity="center" textSize="25sp" />
-                <horizontal>
-                    <button w="150" text="第一个按钮" />
-                    <button w="*" text="第二个按钮"/>
-                </horizontal>
-                <button id="start" text="开始执行" w="*"/>
-                <button id="start" text="停止执行" w="*"/>
+                <text text="倒计时：" textColor="black" textSize="16sp" marginTop="16" textSize="30sp" />
+                <text id="exeinfo" bg="#FFF8DC" text="未启动脚本" h="100" gravity="center" textSize="25sp" />
+                <text id="timeMsg"  bg="#FFF8DC" text="请设置打卡时间" h="50" gravity="center" textSize="15sp" textColor="red"/>
                 <button id="setTime" text="设置上下班时间" w="*"/>
+                <horizontal gravity="center">
+                    <button id="start" layout_weight="1" text="开始"  />
+                    <button id="stop"  layout_weight="1" text="停止"/>
+                </horizontal>
             </vertical>
         </scroll>
     )
+    
+    if(tools.getFromDb("intime")){
+
+        let intime=tools.getFromDb("intime")+0;
+    
+        let msg=""
+        if(!isNaN(intime)){
+            tools.log(parseInt(intime%3600/60))
+            msg+="上班时间："+tools.fmtStr(parseInt(intime/3600))+':'+tools.fmtStr(parseInt(intime%3600/60));
+        }s
+        let offtime=tools.getFromDb("offtime")+0;
+        if(!isNaN(offtime)){
+            msg+="，下班班时间："+tools.fmtStr(parseInt(offtime/3600))+':'+tools.fmtStr(parseInt(offtime%3600/60))  
+        }
+        if(msg){
+            ui.timeMsg.setText(msg);
+        }
+        
+    }
     ui.setTime.on("click", ()=>{
         
         setTime()
     });
-    ui.start.on("click", ()=>{
+    ui.stop.on("click", ()=>{
         
-        tools.log("开始执行打卡任务");
+       if(!loopId){
+            clearInterval(loopId);
+       }
     });
-}
+    ui.start.on("click",()=>{
+        if(!tools.getFromDb("intime") || !tools.getFromDb("offtime")){
+            alert("请设置工作时间");
+        }else{
+            if(isNaN(tools.getFromDb("intime")) || isNaN(tools.getFromDb("offtime"))){
+                alert("工作时间错误，请重新设置");
+            }else{
+                loopId = setInterval(function(){
+                    loop();
+                }, 5000);
+                
+            }
+            
+        }
+        
+    })
 
+}
+var loopId;
+function loop(){
+    let intime=tools.getFromDb("intime")+0;
+    let offtime=tools.getFromDb("offtime")+0;
+
+    let date=Date();
+    let h = date.getHours()
+    let m = date.getMinutes()
+    let s = date.getSeconds()
+    let interval = 10;//提前10分钟
+    
+    if(h < 12){//上班
+        //TODO 判断是否已经打过了卡
+        let val = h*3600+m*60+s -(intime-interval*60);
+        if( val > 0){
+            tools.log("开始in打卡")
+        }else{
+            let msg = "";
+            ui.exeinfo.setText(getStringTime(val))
+        }
+    }else{//下班
+        //TODO 判断是否已经打过了卡
+        let val = h*3600+m*60+s -(offtime+interval*60);
+        if( val > 0){
+            tools.log("开始off打卡")
+        }else{
+            ui.exeinfo.setText(getStringTime(val))
+        }
+    }
+}
+/**
+ * 格式化日期
+ * @param {} val 
+ */
+function getStringTime(val){
+
+    let h = parseInt(val/3600);
+    let m = parseInt(val%3600/60)
+    let s = val%60;
+    return h+"时"+m+"分"+s+"秒"
+
+}
 
 const tbName="dingding";
 var tools={
@@ -95,25 +183,16 @@ var tools={
       },
       log(msg){
             console.log(msg)
+      },
+      fmtStr(num){
+         if(isNaN(num)){
+             return ""
+         }
+         if(num+0<10){
+            return "0"+num;
+         }
+         return num;
       }
-}
-Date.prototype.Format = function(fmt)   
-{ //author: meizz   
-  var o = {   
-    "M+" : this.getMonth()+1,                 //月份   
-    "d+" : this.getDate(),                    //日   
-    "H+" : this.getHours(),                   //小时   
-    "m+" : this.getMinutes(),                 //分   
-    "s+" : this.getSeconds(),                 //秒   
-    "q+" : Math.floor((this.getMonth()+3)/3), //季度   
-    "S"  : this.getMilliseconds()             //毫秒   
-  };   
-  if(/(y+)/.test(fmt))   
-    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));   
-  for(var k in o)   
-    if(new RegExp("("+ k +")").test(fmt))   
-  fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));   
-  return fmt;   
 }
 
 begin();
