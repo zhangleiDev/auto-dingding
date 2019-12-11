@@ -1,7 +1,4 @@
 "ui";
-
-import { Utilities } from "winjs";
-
 function setTime(){
     ui.layout(
         <scroll>
@@ -68,7 +65,7 @@ function begin(){
                 <text id="timeMsg"  bg="#FFF8DC" text="请设置打卡时间" h="50" gravity="center" textSize="15sp" textColor="red"/>
                 <button id="setTime" text="设置上下班时间" w="*"/>
                 <horizontal gravity="center">
-                    <button id="start" layout_weight="1" text="开始"  />
+                    <button id="start" layout_weight="1" text="启动"  />
                     <button id="stop"  layout_weight="1" text="停止"/>
                 </horizontal>
             </vertical>
@@ -83,7 +80,7 @@ function begin(){
         if(!isNaN(intime)){
             tools.log(parseInt(intime%3600/60))
             msg+="上班时间："+tools.fmtStr(parseInt(intime/3600))+':'+tools.fmtStr(parseInt(intime%3600/60));
-        }s
+        }
         let offtime=tools.getFromDb("offtime")+0;
         if(!isNaN(offtime)){
             msg+="，下班班时间："+tools.fmtStr(parseInt(offtime/3600))+':'+tools.fmtStr(parseInt(offtime%3600/60))  
@@ -99,20 +96,28 @@ function begin(){
     });
     ui.stop.on("click", ()=>{
         
-       if(!loopId){
+       if(loopId){
             clearInterval(loopId);
+            loopId=null;
        }
+       ui.exeinfo.setText("未启动脚本");
+       toast("停止执行")
     });
     ui.start.on("click",()=>{
+        
         if(!tools.getFromDb("intime") || !tools.getFromDb("offtime")){
             alert("请设置工作时间");
         }else{
             if(isNaN(tools.getFromDb("intime")) || isNaN(tools.getFromDb("offtime"))){
                 alert("工作时间错误，请重新设置");
             }else{
-                loopId = setInterval(function(){
+                if(!loopId){
                     loop();
-                }, 5000);
+                    loopId = setInterval(loop,5000);
+                    toast("开始运行...id:"+loopId)
+                }else{
+                    toast("请勿重复执行，id:"+loopId)
+                }
                 
             }
             
@@ -123,10 +128,11 @@ function begin(){
 }
 var loopId;
 function loop(){
+
     let intime=tools.getFromDb("intime")+0;
     let offtime=tools.getFromDb("offtime")+0;
 
-    let date=Date();
+    let date=new Date();
     let h = date.getHours()
     let m = date.getMinutes()
     let s = date.getSeconds()
@@ -136,10 +142,11 @@ function loop(){
         //TODO 判断是否已经打过了卡
         let val = h*3600+m*60+s -(intime-interval*60);
         if( val > 0){
+            console.log(val)
             tools.log("开始in打卡")
         }else{
             let msg = "";
-            ui.exeinfo.setText(getStringTime(val))
+            ui.exeinfo.setText(getStringTime(val*-1))
         }
     }else{//下班
         //TODO 判断是否已经打过了卡
@@ -147,7 +154,7 @@ function loop(){
         if( val > 0){
             tools.log("开始off打卡")
         }else{
-            ui.exeinfo.setText(getStringTime(val))
+            ui.exeinfo.setText(getStringTime(val*-1))
         }
     }
 }
