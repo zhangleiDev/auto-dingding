@@ -127,6 +127,7 @@ function begin(){
 
 }
 var loopId;
+var interval = random(2, 10);//提前10分钟
 function loop(){
 
     let intime=tools.getFromDb("intime")+0;
@@ -136,25 +137,37 @@ function loop(){
     let h = date.getHours()
     let m = date.getMinutes()
     let s = date.getSeconds()
-    let interval = 10;//提前10分钟
-    
+    //console.log()
     if(h < 12){//上班
-        //TODO 判断是否已经打过了卡
+        //是否已经打过了卡
+        if(tools.getFromDb("inDate") == tools.getToDay()){
+            return;
+        }
+
         let val = h*3600+m*60+s -(intime-interval*60);
         if( val > 0){
-            console.log(val)
-            tools.log("开始in打卡")
+            if(intime>h*3600+m*60+s-120){//冗余2分钟，迟到2分钟内尝试重复打卡
+                console.log(val)
+                tools.log("开始in打卡")
+            }
+            
         }else{
             let msg = "";
             ui.exeinfo.setText(getStringTime(val*-1))
         }
     }else{//下班
-        //TODO 判断是否已经打过了卡
+        // 判断是否已经打过了卡
+        if(tools.getFromDb("offDate") == tools.getToDay()){
+            return;
+        }
         let val = h*3600+m*60+s -(offtime+interval*60);
-        if( val > 0){
+        if( val > 0 && val < 180){//再次冗余3分钟，重新尝试打卡
+
+
             tools.log("开始off打卡")
         }else{
             ui.exeinfo.setText(getStringTime(val*-1))
+            interval = random(2, 10);//提前10分钟
         }
     }
 }
@@ -173,6 +186,9 @@ function getStringTime(val){
 
 const tbName="dingding";
 var tools={
+     getToDay:function(){
+        return new Date().getMonth()+"-"+new Date().getDate()
+     },
      saveToDb:function(key,val,tb){
         if(!tb){
           tb=tbName;
