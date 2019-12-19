@@ -8,20 +8,17 @@ function launchDingDing(){
     home();
     //启动app
     launchApp("钉钉");
-    var pwd = id("et_pwd_login").findOne(3000);
+    var pwd = id("et_pwd_login").findOne(5000);
     if(pwd){
         pwd.setText("computer");
         id("btn_next").findOne(3000).click();
     }
     
-    console.log("11111111111111")
-    if(!id("img_logo_text").findOne(3000)){
-        console.log("back")
+    if(text("取消").findOne(3000)){
+        console.log("找到了")
         back()
+    }else{
+        console.log("没找到")
     }
-    console.log("222222222222222")
 }
-console.log("----------------33333333----------")
 launchDingDing()
-
-console.log("--------------------------")
