@@ -18,9 +18,8 @@ function setTime(){
 
     if(tools.getFromDb("intime")){
         let intime=tools.getFromDb("intime")+0;
-        
+        tools.log("库intime："+intime)
         if(!isNaN(intime)){
-            
             ui.inTime.setHour(parseInt(intime/3600))
             ui.inTime.setMinute(parseInt(intime%3600/60))
         }
@@ -30,7 +29,9 @@ function setTime(){
     if(tools.getFromDb("offtime")){
         // ui.offTime.setHour(tools.getFromDb("offtime").split(":")[0])
         let offtime=tools.getFromDb("offtime")+0;
+        tools.log("库offtime："+offtime)
         if(!isNaN(offtime)){
+            
             ui.offTime.setHour(parseInt(offtime/3600))
             ui.offTime.setMinute(parseInt(offtime%3600/60))
         }
@@ -131,7 +132,7 @@ var interval = random(2, 10);//提前10分钟
 var interval = 0;//提前10分钟
 
 function loop(){
-
+    tools.log("loop.................................")
     let intime=tools.getFromDb("intime")+0;
     let offtime=tools.getFromDb("offtime")+0;
 
@@ -149,9 +150,12 @@ function loop(){
         let val = h*3600+m*60+s -(intime-interval*60);
         if( val > 0){
             if(intime>h*3600+m*60+s-120){//冗余2分钟，迟到2分钟内尝试重复打卡
-                console.log(val)
+                tools.log(val)
                 tools.log("开始in打卡")
-                launchDingDing();
+                if(launchDingDing()){
+
+                    goProcess(1)
+                }
                 // interval = random(2, 10);//提前10分钟
             }
             
@@ -167,9 +171,13 @@ function loop(){
         let val = h*3600+m*60+s -(offtime+interval*60);
         if( val > 0 && val < 180){//再次冗余3分钟，重新尝试打卡
 
-            launchDingDing();
+            if(launchDingDing()){
+
+                goProcess(2)
+
+            }
             tools.log("开始off打卡")
-            // interval = random(2, 10);//提前10分钟
+            // interval = random(2, 10);//1提前10分钟
         }else{
             ui.exeinfo.setText(getStringTime(val*-1))
         }
@@ -244,10 +252,10 @@ function launchDingDing(){
         tools.log("关闭多余弹窗")
         back()
     }
-    if(text("钉钉").findOne(1000)){
-        console.log("启动成功")
+    if(text("消息").findOne(1000)){
+        tools.log("启动成功")
     }else{
-        console.log("启动失败")
+        tools.log("启动失败")
         return false;
     }
     return true;
@@ -258,15 +266,16 @@ var times =0;
  * 
  * @param {*} type 1：上班，2：下班
  */
-function start(type){
+function goProcess(type){
+    
+    tools.log("type:"+type)
     times++;
-    launchDingDing();
     
     var dakaBtn=descStartsWith("上班时间").findOne(5000);
     //log(dakaBtn)
     if(dakaBtn != null){
         inOrOffWork(type)
-        log("直接进入打卡页面")
+        tools.log("直接进入打卡页面")
         return;
     }
 
@@ -274,28 +283,34 @@ function start(type){
     var myBtn = text("我的").findOne(10000);
     
     if(myBtn == null){
-        log("首页加载失败/超时");
+        tools.log("首页加载失败/超时");
         backDingHome();
         if(times == 2){
-            log("第二次尝试打卡失败，结束打卡")
+            tools.log("第二次尝试打卡失败，结束打卡")
             return;
         }
-        log("第二次尝试重新打卡。。。。")
+        tools.log("第二次尝试重新打卡。。。。")
         
-        start(type);
+        goProcess(type);
     }else{
-        click(msgBtn.bounds().centerX()+(myBtn.bounds().centerX()-msgBtn.bounds().centerX())/2, myBtn.bounds().centerY())
+        tools.log("qqqqqqqqqqqqqqqq")
+        var r = click(msgBtn.bounds().centerX()+(myBtn.bounds().centerX()-msgBtn.bounds().centerX())/2, myBtn.bounds().centerY())
+        tools.log(r)
         // log((msgBtn.bounds().centerX()+(myBtn.bounds().centerX()-msgBtn.bounds().centerX())/2)+"   "+myBtn.bounds().centerY())
-        
+        tools.log(2222222222222222222222222)
         var clockInIcon = desc("考勤打卡").findOne(10000);
+        tools.log(3333333333333333333333)
         if(clockInIcon == null){
-            log("获取考勤打卡图标失败！");
+            tools.log(44444444444444444444444)
+            tools.log("获取考勤打卡图标失败！");
             
         }else{
+            tools.log("进入打卡页面...");
             clockInIcon.click()
             inOrOffWork(type)
             
         }
+        tools.log(5555555555555555)
     
     }
 }
@@ -308,21 +323,21 @@ function inOrOffWork(type){
     if(type == 1){
         var inWork = desc("上班打卡").findOne(10000);
         if(inWork == null){
-            log("获取上班打卡图标失败！");
+            tools.log("获取上班打卡图标失败！");
         }else{
             desc("上班打卡").findOne().click();
-            log("完成上班打卡")
+            tools.log("完成上班打卡")
         }
     }else{
         var txt = "下班打卡"
         //txt = "外勤打卡"
         var offWork = desc(txt).findOne(10000);
         if(offWork == null){
-            log("获取下班打卡图标失败！");
+            tools.log("获取下班打卡图标失败！");
         
         }else{
             desc(txt).findOne().click();
-            log("完成下班打卡")
+            tools.log("完成下班打卡")
         }
     }
     sleep(3000)
@@ -330,9 +345,9 @@ function inOrOffWork(type){
     for(var i=0;i<dakaTimes.length;i++){
         log("已经完成打卡！")
         if(i==0){
-            log("上班时间："+dakaTimes[i].parent().child(2).desc())
+            tools.log("上班时间："+dakaTimes[i].parent().child(2).desc())
         }else{
-            log("下班时间："+dakaTimes[i].parent().child(2).desc())
+            tools.log("下班时间："+dakaTimes[i].parent().child(2).desc())
         }
     }
 }
