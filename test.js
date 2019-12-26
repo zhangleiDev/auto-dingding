@@ -5,16 +5,27 @@ ui.layout(
     </vertical>
 );
 ui.bt1.on("click", ()=>{
-    let r = launchDingDing()
-    tools.log("模拟点击  ")
-    threads.start(function(){
-        //在新线程执行的代码
-        click(540, 2302)//卡死
-    });
+    runThread(()=>{
+
+        let r = launchDingDing()
+        // tools.log("模拟点击  ")
+        // runThread(()=>{
+        //     click(540, 2302)
+        // })
     
-    tools.log("rrrrrrrrrrr  " +r)
+        tools.log("rrrrrrrrrrr  " +r)
+    })
+    
 
  });
+ 
+ function runThread(fun){
+    var t=threads.start(function(){
+        //在新线程执行的代码
+        fun();//卡死
+    });
+    return t;
+ }
 // var msgBtn = text("消息").findOne(10000);
     // var myBtn = text("我的").findOne(10000);
     // tools.log((msgBtn.bounds().centerX()+(myBtn.bounds().centerX()-msgBtn.bounds().centerX())/2)+"   "+myBtn.bounds().centerY())
@@ -39,6 +50,7 @@ function launchDingDing(){
     //启动app
     launchApp("钉钉");
     var pwd = id("et_pwd_login").findOne(5000);
+    tools.log("密码  "+pwd)
     if(pwd){
         tools.log("尝试自动输入密码。。。。")
         pwd.setText("computer");

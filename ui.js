@@ -96,7 +96,10 @@ function begin(){
         setTime()
     });
     ui.stop.on("click", ()=>{
-        
+       if(threadId && threadId.isAlive()){
+            tools.log("isAlive()")
+            threadId.interrupt();
+       }
        if(loopId){
             clearInterval(loopId);
             loopId=null;
@@ -129,10 +132,16 @@ function begin(){
 }
 var loopId;
 var interval = random(2, 10);//提前10分钟
-var interval = 0;//提前10分钟
-
+    interval = 0;//提前10分钟
+var threadId;
 function loop(){
-    tools.log("loop.................................")
+
+    if(threadId!=null && threadId.isAlive()){
+        tools.log("loop isAlive()")
+        return;
+    }
+
+    tools.log("loop................................."+threadId)
     let intime=tools.getFromDb("intime")+0;
     let offtime=tools.getFromDb("offtime")+0;
 
@@ -152,11 +161,15 @@ function loop(){
             if(intime>h*3600+m*60+s-120){//冗余2分钟，迟到2分钟内尝试重复打卡
                 tools.log(val)
                 tools.log("开始in打卡")
-                if(launchDingDing()){
+                threadId = threads.start(function(){
 
-                    goProcess(1)
-                }
-                // interval = random(2, 10);//提前10分钟
+                    if(launchDingDing()){
+
+                        goProcess(1)
+                    }
+                    // interval = random(2, 10);//提前10分钟
+                })
+                
             }
             
         }else{
@@ -170,18 +183,27 @@ function loop(){
         }
         let val = h*3600+m*60+s -(offtime+interval*60);
         if( val > 0 && val < 180){//再次冗余3分钟，重新尝试打卡
+            
+            tools.log("xiabannnnnnnnnnnnn")
+            threadId = threads.start(function(){
+                
+                if(launchDingDing()){
 
-            if(launchDingDing()){
+                    goProcess(2)
+    
+                }
 
-                goProcess(2)
-
-            }
-            tools.log("开始off打卡")
-            // interval = random(2, 10);//1提前10分钟
+                tools.log("开始off打卡")
+                // interval = random(2, 10);//1提前10分钟
+            })
+            
         }else{
             ui.exeinfo.setText(getStringTime(val*-1))
         }
     }
+
+
+    tools.log("..........end.............")
 }
 /**
  * 格式化日期
@@ -256,6 +278,7 @@ function launchDingDing(){
         tools.log("启动成功")
     }else{
         tools.log("启动失败")
+        back();
         return false;
     }
     return true;
@@ -293,24 +316,20 @@ function goProcess(type){
         
         goProcess(type);
     }else{
-        tools.log("qqqqqqqqqqqqqqqq")
+        
         var r = click(msgBtn.bounds().centerX()+(myBtn.bounds().centerX()-msgBtn.bounds().centerX())/2, myBtn.bounds().centerY())
-        tools.log(r)
+        
         // log((msgBtn.bounds().centerX()+(myBtn.bounds().centerX()-msgBtn.bounds().centerX())/2)+"   "+myBtn.bounds().centerY())
-        tools.log(2222222222222222222222222)
         var clockInIcon = desc("考勤打卡").findOne(10000);
-        tools.log(3333333333333333333333)
         if(clockInIcon == null){
-            tools.log(44444444444444444444444)
             tools.log("获取考勤打卡图标失败！");
-            
+            back()
         }else{
             tools.log("进入打卡页面...");
             clockInIcon.click()
             inOrOffWork(type)
             
         }
-        tools.log(5555555555555555)
     
     }
 }
@@ -319,13 +338,13 @@ function goProcess(type){
 function inOrOffWork(type){
     //处理极速打卡，等待触发极速打卡
     //sleep(5000)
-
     if(type == 1){
         var inWork = desc("上班打卡").findOne(10000);
         if(inWork == null){
             tools.log("获取上班打卡图标失败！");
         }else{
             desc("上班打卡").findOne().click();
+            saveTime(type)
             tools.log("完成上班打卡")
         }
     }else{
@@ -337,6 +356,7 @@ function inOrOffWork(type){
         
         }else{
             desc(txt).findOne().click();
+            saveTime(type)
             tools.log("完成下班打卡")
         }
     }
@@ -351,7 +371,19 @@ function inOrOffWork(type){
         }
     }
 }
+/**
+ * 保存当天的时间
+ * @param  type 
+ */
+function saveTime(type){
+    if(type == 1){
 
+        tools.saveToDb("inDate",tools.getToDay())
+    }else{
+        
+        tools.saveToDb("offDate",tools.getToDay())
+    }
+}
 function backDingHome(){
     var backBtn = id("back_layout").findOne(3000)
     while(backBtn != null){
