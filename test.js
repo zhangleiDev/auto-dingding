@@ -18,7 +18,7 @@ ui.bt1.on("click", ()=>{
     
 
  });
- 
+
  function runThread(fun){
     var t=threads.start(function(){
         //在新线程执行的代码
@@ -71,15 +71,3 @@ function launchDingDing(){
     }
     return true;
 }
-
-
-
-
-
-
-
-
-
-
-
-

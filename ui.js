@@ -1,4 +1,4 @@
-"ui";
+// "ui";
 function setTime(){
     ui.layout(
         <scroll>
@@ -149,15 +149,27 @@ function loop(){
     let h = date.getHours()
     let m = date.getMinutes()
     let s = date.getSeconds()
+    //校验法定节假
+    if(tools.getFromDb('workday')){
+
+    }else{
+        tools.saveToDb('workday',{'day':(date.getMonth()+1)+"-"+ date.getDate(),'flag':true})
+    }
+
     //console.log()
     if(h < 12){//上班
+        let val = h*3600+m*60+s -(intime-interval*60);
+        let msg = "";
+        ui.exeinfo.setText(getStringTime(val*-1))
+
         //是否已经打过了卡
         if(tools.getFromDb("inDate") == tools.getToDay()){
+            tools.log("今天已经打卡1");
             return;
         }
 
-        let val = h*3600+m*60+s -(intime-interval*60);
         if( val > 0){
+            
             if(intime>h*3600+m*60+s-120){//冗余2分钟，迟到2分钟内尝试重复打卡
                 tools.log(val)
                 tools.log("开始in打卡")
@@ -172,19 +184,20 @@ function loop(){
                 
             }
             
-        }else{
-            let msg = "";
-            ui.exeinfo.setText(getStringTime(val*-1))
         }
     }else{//下班
+        
+        let val = h*3600+m*60+s -(offtime+interval*60);
+        ui.exeinfo.setText(getStringTime(val*-1))
         // 判断是否已经打过了卡
         if(tools.getFromDb("offDate") == tools.getToDay()){
+            tools.log("今天已经打卡2");
             return;
         }
-        let val = h*3600+m*60+s -(offtime+interval*60);
+        
         if( val > 0 && val < 180){//再次冗余3分钟，重新尝试打卡
             
-            tools.log("xiabannnnnnnnnnnnn")
+            tools.log("下班nnnnnnnnnnnn")
             threadId = threads.start(function(){
                 
                 if(launchDingDing()){
@@ -194,11 +207,9 @@ function loop(){
                 }
 
                 tools.log("开始off打卡")
-                // interval = random(2, 10);//1提前10分钟
+                // interval = random(2, 10);//提前10分钟
             })
             
-        }else{
-            ui.exeinfo.setText(getStringTime(val*-1))
         }
     }
 
@@ -221,7 +232,8 @@ function getStringTime(val){
 const tbName="dingding";
 var tools={
      getToDay:function(){
-        return new Date().getMonth()+"-"+new Date().getDate()
+        var date = new Date();
+        return date.getFullYear()+this.fmtStr(date.getMonth()+1)+""+this.fmtStr(date.getDate())
      },
      saveToDb:function(key,val,tb){
         if(!tb){
@@ -249,6 +261,16 @@ var tools={
             return "0"+num;
          }
          return num;
+      },
+      isWorkDay(){//工作日对应结果为 0, 休息日对应结果为 1, 节假日对应的结果为 2；
+        var r = http.get("http://tool.bitefu.net/jiari/?d="+this.getToDay());
+        this.log("http://tool.bitefu.net/jiari/?d="+this.getToDay())
+        this.log(this.getToDay())
+        if(r.statusCode == "200"){
+            let rs  = r.body.string();
+            this.log(rs)
+            return rs=="0";
+        }
       }
 }
 
@@ -365,8 +387,10 @@ function inOrOffWork(type){
     for(var i=0;i<dakaTimes.length;i++){
         log("已经完成打卡！")
         if(i==0){
+            saveTime(1)
             tools.log("上班时间："+dakaTimes[i].parent().child(2).desc())
         }else{
+            saveTime(2)
             tools.log("下班时间："+dakaTimes[i].parent().child(2).desc())
         }
     }
@@ -394,4 +418,7 @@ function backDingHome(){
 
 console.log("-------------end---------------")
 
-begin();
+// begin();
+
+tools.log(tools.isWorkDay())
+// tools.log(tools.getToDay())
