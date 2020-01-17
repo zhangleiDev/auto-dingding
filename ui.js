@@ -137,7 +137,7 @@ var threadId;
 function loop(){
 
     if(threadId!=null && threadId.isAlive()){
-        tools.log("loop isAlive()")
+        tools.log("loop isAlive()");
         return;
     }
 
@@ -146,14 +146,27 @@ function loop(){
     let offtime=tools.getFromDb("offtime")+0;
 
     let date=new Date();
-    let h = date.getHours()
-    let m = date.getMinutes()
-    let s = date.getSeconds()
-    //校验法定节假
+    let h = date.getHours();
+    let m = date.getMinutes();
+    let s = date.getSeconds();
+    //校验法定节假,跳过节日
     if(tools.getFromDb('workday')){
+        //{ day: '1-17', flag: true }
+        let data = JSON.parse(tools.getFromDb('workday'));
+        tools.log(JSON.stringify(data))
+        if(data.day != (date.getMonth()+1)+"-"+ date.getDate()){
+        
+            data.day = (date.getMonth()+1)+"-"+ date.getDate();
+            data.flag = tools.isWorkDay();
+            tools.saveToDb('workday',JSON.stringify(data));
+        }
+    
+        if(!data.flag){
 
+            return
+        }
     }else{
-        tools.saveToDb('workday',{'day':(date.getMonth()+1)+"-"+ date.getDate(),'flag':true})
+        tools.saveToDb('workday',JSON.stringify({'day':(date.getMonth()+1)+"-"+ date.getDate(),'flag':tools.isWorkDay()}))
     }
 
     //console.log()
@@ -177,7 +190,7 @@ function loop(){
 
                     if(launchDingDing()){
 
-                        goProcess(1)
+                        goProcess(1);
                     }
                     // interval = random(2, 10);//提前10分钟
                 })
@@ -202,7 +215,7 @@ function loop(){
                 
                 if(launchDingDing()){
 
-                    goProcess(2)
+                    goProcess(2);
     
                 }
 
@@ -249,6 +262,13 @@ var tools={
           }
         var storage = storages.create(tb);
         return storage.get(key);
+      },
+      removeFromDb:function(key,tb){
+        if(!tb){
+            tb=tbName;
+          }
+        var storage = storages.create(tb);
+        return storage.remove(key);
       },
       log(msg){
             console.log(msg)
@@ -420,5 +440,10 @@ console.log("-------------end---------------")
 
 // begin();
 
-tools.log(tools.isWorkDay())
+function aaa(){
+
+}
+// tools.saveToDb('workday',JSON.stringify({'day':'1111111','flag':tools.isWorkDay()}))
+aaa()
+// tools.removeFromDb('workday')
 // tools.log(tools.getToDay())
