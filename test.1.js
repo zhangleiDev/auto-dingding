@@ -28,7 +28,7 @@
        return storage.remove(key);
      },
      log(msg){
-           console.log(msg)
+           toast(msg)
      },
      fmtStr(num){
         if(isNaN(num)){
@@ -54,14 +54,41 @@
 
 
 
-tools.removeFromDb("inDate")
-tools.removeFromDb("offDate")
+// tools.removeFromDb("inDate")
+// tools.removeFromDb("offDate")
 
-tools.log(tools.getFromDb("inDate"))
-tools.log(tools.getFromDb("offDate"))
+// tools.log(tools.getFromDb("inDate"))
+// tools.log(tools.getFromDb("offDate"))
 
 
+function aaa(){
+  let date=new Date();
+    let h = date.getHours();
+    let m = date.getMinutes();
+    let s = date.getSeconds();
+    //校验法定节假,跳过节日
+    if(tools.getFromDb('workday')){
+        //{ day: '1-17', flag: true }
+        let data = JSON.parse(tools.getFromDb('workday'));
+        tools.log(JSON.stringify(data))
+        if(data.day != (date.getMonth()+1)+"-"+ date.getDate()){
+        
+            data.day = (date.getMonth()+1)+"-"+ date.getDate();
+            data.flag = tools.isWorkDay();
+            tools.saveToDb('workday',JSON.stringify(data));
+        }
+    
+        if(!data.flag){
+          tools.log("法定假")
+            return
+        }
+    }else{
+        tools.saveToDb('workday',JSON.stringify({'day':(date.getMonth()+1)+"-"+ date.getDate(),'flag':tools.isWorkDay()}))
+    }
+    tools.log("不是法定假")
+}
 
+aaa();
 
 
 
