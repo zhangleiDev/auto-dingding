@@ -1,4 +1,4 @@
-// "ui";
+"ui";
 function setTime(){
     ui.layout(
         <scroll>
@@ -8,14 +8,16 @@ function setTime(){
                 <timepicker id="inTime" timePickerMode="spinner"/>
                 <text text="设置下班时间" textColor="black" textSize="16sp" marginTop="16"/>
                 <timepicker id="offTime" timePickerMode="spinner"/>
-                <button id="save" text="保存" w="*"/>
+                <text text="通知邮箱(非必填，若设置将会收到打卡结果通知)" textColor="red" textSize="16sp" marginTop="16"/>
+                <input id="email" hint="例：12345@qq.com" />
+                <button id="save" text="保存" w="*" marginTop="16"/>
                 <button id="back" text="返回" w="*"/>
             </vertical>
         </scroll>
     )
     ui.inTime.setIs24HourView(true);
     ui.offTime.setIs24HourView(true);
-
+    
     if(tools.getFromDb("intime")){
         let intime=tools.getFromDb("intime")+0;
         tools.log("库intime："+intime)
@@ -36,17 +38,27 @@ function setTime(){
             ui.offTime.setMinute(parseInt(offtime%3600/60))
         }
         
-    }  
+    }
+    
+    if(tools.getFromDb("email")){
+       
+        ui.email.setText(tools.getFromDb("email"));
+    }
+    
     
     ui.save.on("click", ()=>{
         
         var _in = ui.inTime.getHour()*3600+ui.inTime.getMinute()*60;
         var off = ui.offTime.getHour()*3600+ui.offTime.getMinute()*60;
+        var email = String(ui.email.getText());
         tools.log("上班时间:"+_in);
         tools.log("下班时间:"+off);
-        
+        tools.log("邮箱:"+email)
+    
         tools.saveToDb("intime",_in)
         tools.saveToDb("offtime",off)
+        tools.saveToDb("email",email)
+        
         toast("时间设置成功");
         begin();
     });
@@ -253,7 +265,6 @@ var tools={
           tb=tbName;
         }
         var storage = storages.create(tb);
-        storage = storages.create(tb);
         storage.put(key,val);
       },
       getFromDb:function(key,tb){
@@ -284,8 +295,8 @@ var tools={
       },
       isWorkDay(){//工作日对应结果为 0, 休息日对应结果为 1, 节假日对应的结果为 2；
         var r = http.get("http://tool.bitefu.net/jiari/?d="+this.getToDay());
-        this.log("http://tool.bitefu.net/jiari/?d="+this.getToDay())
-        this.log(this.getToDay())
+        // this.log("http://tool.bitefu.net/jiari/?d="+this.getToDay())
+        // this.log(this.getToDay())
         if(r.statusCode == "200"){
             let rs  = r.body.string();
             this.log(rs)
@@ -404,15 +415,30 @@ function inOrOffWork(type){
     }
     sleep(3000)
     var dakaTimes = descStartsWith("打卡时间").find();
+    let msg = "打卡日期:"+tools.getToDay()+"\n";
     for(var i=0;i<dakaTimes.length;i++){
-        log("已经完成打卡！")
+        tools.log("已经完成打卡！")
+        
         if(i==0){
             saveTime(1)
             tools.log("上班时间："+dakaTimes[i].parent().child(2).desc())
+            msg += "上班时间："+dakaTimes[i].parent().child(2).desc()+"\n";
         }else{
             saveTime(2)
             tools.log("下班时间："+dakaTimes[i].parent().child(2).desc())
+            msg += "下班时间："+dakaTimes[i].parent().child(2).desc()
         }
+    }
+    //邮件通知
+    if(dakaTimes.length > 0){
+        
+        if(tools.getFromDb("email")){
+            var res = http.post("www.seeyou-again.cn:9696/mail/send", {
+                "mail": tools.getFromDb("email"),
+                "text": msg
+            });
+        }
+        tools.log(msg)
     }
 }
 /**
@@ -438,12 +464,13 @@ function backDingHome(){
 
 console.log("-------------end---------------")
 
-// begin();
+begin();
 
 function aaa(){
-
+    // tools.saveToDb("email","334694375@qq.com")
+    tools.log(tools.getFromDb("email"))
 }
+// aaa()
 // tools.saveToDb('workday',JSON.stringify({'day':'1111111','flag':tools.isWorkDay()}))
-aaa()
 // tools.removeFromDb('workday')
 // tools.log(tools.getToDay())
