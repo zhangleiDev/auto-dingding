@@ -1,4 +1,4 @@
-
+"ui";
   const tbName="dingding";
 
   var tools={
@@ -62,30 +62,15 @@
 
 
 function aaa(){
-  let date=new Date();
-    let h = date.getHours();
-    let m = date.getMinutes();
-    let s = date.getSeconds();
-    //校验法定节假,跳过节日
-    if(tools.getFromDb('workday')){
-        //{ day: '1-17', flag: true }
-        let data = JSON.parse(tools.getFromDb('workday'));
-        tools.log(JSON.stringify(data))
-        if(data.day != (date.getMonth()+1)+"-"+ date.getDate()){
-        
-            data.day = (date.getMonth()+1)+"-"+ date.getDate();
-            data.flag = tools.isWorkDay();
-            tools.saveToDb('workday',JSON.stringify(data));
-        }
-    
-        if(!data.flag){
-          tools.log("法定假")
-            return
-        }
-    }else{
-        tools.saveToDb('workday',JSON.stringify({'day':(date.getMonth()+1)+"-"+ date.getDate(),'flag':tools.isWorkDay()}))
-    }
-    tools.log("不是法定假")
+  threads.start(function(){
+                
+    console.show();
+    console.setSize(device.width, device.height / 3);
+    console.setPosition(0, device.height*2/3-100);
+
+    console.log(device.height/3)
+})
+console.log(1313123123)
 }
 
 aaa();

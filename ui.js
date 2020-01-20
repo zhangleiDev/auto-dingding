@@ -69,6 +69,20 @@ function setTime(){
 }
 
 function begin(){
+    try {
+        threads.start(function(){
+            console.show();
+            console.setSize(device.width, device.height / 3);
+            console.setPosition(0, device.height*2/3-100);
+
+        })
+        
+        requiresApi(24)
+      } catch(err) {
+
+        console.log("安卓版本不能低于7.0")
+        return;
+      }
     ui.layout(
         <scroll>
             <vertical padding="16">
