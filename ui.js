@@ -70,13 +70,6 @@ function setTime(){
 
 function begin(){
     try {
-        threads.start(function(){
-            console.show();
-            console.setSize(device.width, device.height / 3);
-            console.setPosition(0, device.height*2/3-100);
-
-        })
-        
         requiresApi(24)
       } catch(err) {
 
@@ -90,6 +83,7 @@ function begin(){
                 <text text="倒计时：" textColor="black" textSize="16sp" marginTop="16" textSize="30sp" />
                 <text id="exeinfo" bg="#FFF8DC" text="未启动脚本" h="100" gravity="center" textSize="25sp" />
                 <text id="timeMsg"  bg="#FFF8DC" text="请设置打卡时间" h="50" gravity="center" textSize="15sp" textColor="red"/>
+                <checkbox id="showlog" text="显示运行日志" />
                 <button id="setTime" text="设置上下班时间" w="*"/>
                 <horizontal gravity="center">
                     <button id="start" layout_weight="1" text="启动"  />
@@ -118,7 +112,7 @@ function begin(){
         
     }
     ui.setTime.on("click", ()=>{
-        
+        console.hide();
         setTime()
     });
     ui.stop.on("click", ()=>{
@@ -133,6 +127,21 @@ function begin(){
        ui.exeinfo.setText("未启动脚本");
        toast("停止执行")
     });
+    ui.showlog.on("click",(val)=>{
+        if(val.isChecked()){
+            threads.start(function(){
+                console.show();
+                console.setSize(device.width, device.height / 3);
+                console.setPosition(0, device.height*2/3-100);
+    
+            })
+
+        }else{
+            console.hide();
+        }
+            
+    })
+
     ui.start.on("click",()=>{
         
         if(!tools.getFromDb("intime") || !tools.getFromDb("offtime")){
@@ -191,7 +200,7 @@ var interval = random(2, 10);//提前10分钟
     interval = 0;//提前10分钟
 var threadId;
 function loop(){
-
+    toast("running...")
     if(threadId!=null && threadId.isAlive()){
         tools.log("loop isAlive()");
         return;
@@ -207,14 +216,22 @@ function loop(){
     let m = date.getMinutes();
     let s = date.getSeconds();
     //console.log()
-    if(h < 12){//上班
+    if(h < 18){//上班
         let val = h*3600+m*60+s -(intime-interval*60);
         let msg = "";
-        ui.exeinfo.setText(getStringTime(val*-1))
+        if(val > 0){
+             console.log("***************")
+             console.log(offtime+interval*60)
+             console.log((offtime+interval*60) - h*3600+m*60+s)
+            ui.exeinfo.setText(getStringTime((offtime+interval*60) - (h*3600+m*60+s)))
+        }else{
+            ui.exeinfo.setText(getStringTime(val*-1))
+        }
+        
 
         //是否已经打过了卡
         if(tools.getFromDb("inDate") == tools.getToDay()){
-            tools.log("今天已经打卡1");
+            tools.log("今天已经打上班卡");
             return;
         }
 
@@ -222,14 +239,14 @@ function loop(){
             
             if(intime>h*3600+m*60+s-120){//冗余2分钟，迟到2分钟内尝试重复打卡
                 tools.log(val)
-                tools.log("开始in打卡")
+                tools.log("开始上班打卡")
                 threadId = threads.start(function(){
 
                     if(launchDingDing()){
 
                         goProcess(1);
                     }
-                    // interval = random(2, 10);//提前10分钟
+                    interval = random(2, 10);//提前10分钟
                 })
                 
             }
@@ -238,16 +255,22 @@ function loop(){
     }else{//下班
         
         let val = h*3600+m*60+s -(offtime+interval*60);
-        ui.exeinfo.setText(getStringTime(val*-1))
+        
+        if(val > 0){
+            ui.exeinfo.setText(getStringTime(24*60*60-h*3600+m*60+s+intime))
+        }else{
+            ui.exeinfo.setText(getStringTime(val*-1))
+        }
+        
         // 判断是否已经打过了卡
         if(tools.getFromDb("offDate") == tools.getToDay()){
-            tools.log("今天已经打卡2");
+            tools.log("今天已经打下班卡");
             return;
         }
         
         if( val > 0 && val < 180){//再次冗余3分钟，重新尝试打卡
             
-            tools.log("下班nnnnnnnnnnnn")
+            tools.log("开始下班打卡")
             threadId = threads.start(function(){
                 
                 if(launchDingDing()){
@@ -257,7 +280,7 @@ function loop(){
                 }
 
                 tools.log("开始off打卡")
-                // interval = random(2, 10);//提前10分钟
+                interval = random(2, 10);//提前10分钟
             })
             
         }

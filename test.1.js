@@ -1,4 +1,4 @@
-"ui";
+// "ui";
   const tbName="dingding";
 
   var tools={
@@ -17,7 +17,7 @@
        if(!tb){
            tb=tbName;
          }
-       var storage = storages.create(tb);
+       var storage = storages.create(tb );
        return storage.get(key);
      },
      removeFromDb:function(key,tb){
@@ -62,18 +62,38 @@
 
 
 function aaa(){
-  threads.start(function(){
-                
-    console.show();
-    console.setSize(device.width, device.height / 3);
-    console.setPosition(0, device.height*2/3-100);
+  let interval=1;
+  let intime=tools.getFromDb("intime")+0;
+    let offtime=tools.getFromDb("offtime")+0;
+  let date=new Date();
+  let h = date.getHours();
+  let m = date.getMinutes();
+  let s = date.getSeconds();
 
-    console.log(device.height/3)
-})
-console.log(1313123123)
+
+  let val = h*3600+m*60+s -(intime-interval*60);
+  let msg = "";
+  if(val > 0){
+       console.log("***************")
+       console.log(offtime+interval*60)
+       console.log(h*3600+m*60+s)
+       console.log((offtime+interval*60) - (h*3600+m*60+s))
+  }else{
+    console.log(val*-1)
+  }
+
+console.log("***************")
 }
+function getStringTime(val){
 
-aaa();
+  let h = parseInt(val/3600);
+  let m = parseInt(val%3600/60)
+  let s = val%60;
+  return h+"时"+m+"分"+s+"秒"
+
+}
+console.log(getStringTime(val))
+// aaa();
 
 
 
